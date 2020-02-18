@@ -1,0 +1,19 @@
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+packages/
+vs15/
+.vs/
+.db/
+.learningtransport/
+demos/FireOnWheels/.audit-db
+demos/FireOnWheels/.logs
