@@ -1,46 +1,53 @@
-using IdentityDemo.Data;
+using IdentityExample.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NETCore.MailKit.Extensions;
+using NETCore.MailKit.Infrastructure.Internal;
 
-namespace IdentityDemo
+namespace IdentityExample
 {
     public class Startup
     {
+        private IConfiguration _config;
+
+        public Startup(IConfiguration config)
+        {
+            _config = config;
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<AppDbContext>(config =>
             {
-                config.UseSqlServer("Server=.;Database=MyIdentity;Trusted_Connection=True;")
-                .UseLazyLoadingProxies();
+                config.UseInMemoryDatabase("Memory");
             });
 
-            services.AddIdentity<AppUser, IdentityRole>(config =>
+            // AddIdentity registers the services
+            services.AddIdentity<IdentityUser, IdentityRole>(config =>
             {
                 config.Password.RequiredLength = 4;
                 config.Password.RequireDigit = false;
                 config.Password.RequireNonAlphanumeric = false;
                 config.Password.RequireUppercase = false;
-            }).AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+                config.SignIn.RequireConfirmedEmail = true;
+            })
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
 
-            services.AddAuthorization(config =>
+            services.ConfigureApplicationCookie(config =>
             {
-
-            });
-
-            services
-            .AddAuthentication("CookieAuth")
-            .AddCookie("CookieAuth", config =>
-            {
-                config.Cookie.Name = "Fred.Cookie";
+                config.Cookie.Name = "Identity.Cookie";
                 config.LoginPath = "/Home/Login";
             });
 
-            services.AddControllers();
+            services.AddMailKit(config => config.UseMailKit(_config.GetSection("Email").Get<MailKitOptions>()));
+
+            services.AddControllersWithViews();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -50,25 +57,15 @@ namespace IdentityDemo
                 app.UseDeveloperExceptionPage();
             }
 
-            //using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
-            //{
-            //    var context = serviceScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            //    context.Database.EnsureDeleted();
-            //    context.Database.EnsureCreated();
-            //    context.Database.Migrate();
-            //}
-
             app.UseRouting();
 
-            // who you are?
             app.UseAuthentication();
 
-            // are you allowed?
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                endpoints.MapDefaultControllerRoute();
             });
         }
     }
