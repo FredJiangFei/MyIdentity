@@ -11,15 +11,11 @@ namespace IdentityDemo.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly UserManager<AppUser> _userManager;
-        private readonly SignInManager<AppUser> _signInManager;
+        private readonly IAuthorizationService _authenticationService;
 
-        public HomeController(
-            UserManager<AppUser> userManager,
-            SignInManager<AppUser> signInManager)
+        public HomeController(IAuthorizationService authenticationService)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
+            this._authenticationService = authenticationService;
         }
 
         [Route("/index")]
@@ -35,55 +31,49 @@ namespace IdentityDemo.Controllers
             return Ok("Hello Secret"); 
         }
 
-        [Route("/login")]
-        public async Task<IActionResult> Login(string username, string password)
+        [Authorize(Policy = "DoB")]
+        [Route("/dob")]
+        public IActionResult Dob()
         {
-            var user = await _userManager.FindByNameAsync(username);
-
-            if (user != null)
-            {
-                //sign in
-                var signInResult = await _signInManager.PasswordSignInAsync(user, password, false, false);
-
-                //var claims = new List<Claim>
-                //{
-                //    new Claim(ClaimTypes.Name, "Fred"),
-                //    new Claim(ClaimTypes.Email, "fred@123.com")
-                //};
-                //var ci = new ClaimsIdentity(claims, "Email Claim");
-                //var cp = new ClaimsPrincipal(new[] { ci });
-                //await HttpContext.SignInAsync(cp);
-
-                if (signInResult.Succeeded)
-                {
-                    return Ok("Login Success");
-                }
-            }
-            
-            return Ok("Login Fail");
+            return Ok("Hello Dob");
         }
 
-        [HttpPost]
-        [Route("/register")]
-        public async Task<IActionResult> Register(string username, string password)
+        [Authorize(Roles = "Admin")]
+        [Route("/admin")]
+        public IActionResult Admin()
         {
-            var user = new AppUser
+            return Ok("Hello Admin");
+        }
+
+        [Route("/logindob")]
+        public async Task<IActionResult> LoginDob()
+        {
+            var claims = new List<Claim>
             {
-                UserName = username,
-                Email = "329126523@qq.com",
-                Sex = 1
+                new Claim(ClaimTypes.Name, "Fred"),
+                new Claim(ClaimTypes.Email, "fred@123.com"),
+                new Claim(ClaimTypes.DateOfBirth, "17/2/2019"),
+                new Claim(ClaimTypes.Role, "Admin")
             };
-
-            var result = await _userManager.CreateAsync(user, password);
-            return Ok(result.Succeeded ? "Register Succeeded" : "Register Failed");
+            var ci = new ClaimsIdentity(claims, "My Claim");
+            var cp = new ClaimsPrincipal(new[] { ci });
+            await HttpContext.SignInAsync(cp);
+            return Ok("Login Success");
         }
 
-        [HttpPost]
-        [Route("/logout")]
-        public async Task<IActionResult> LogOut()
+        public async Task<IActionResult> DoStuff()
         {
-            await _signInManager.SignOutAsync();
-            return Ok("Logout Succeeded");
+            // we are doing stuff here
+            var builder = new AuthorizationPolicyBuilder("Schema");
+            var customPolicy = builder.RequireClaim("Hello").Build();
+            var authResult = await _authenticationService.AuthorizeAsync(User, customPolicy);
+
+            if (authResult.Succeeded)
+            {
+                return View("Index");
+            }
+
+            return View("Error");
         }
     }
 }
