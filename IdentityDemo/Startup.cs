@@ -1,4 +1,6 @@
 using IdentityDemo.AuthorizationRequirements;
+using IdentityDemo.Controllers;
+using IdentityDemo.CustomPolicyProvider;
 using IdentityDemo.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -45,6 +47,10 @@ namespace IdentityDemo
                 config.LoginPath = "/Home/Login";
             });
 
+            services.AddSingleton<IAuthorizationPolicyProvider, CustomAuthorizationPolicyProvider>();
+            services.AddScoped<IAuthorizationHandler, SecurityLevelHandler>();
+            services.AddScoped<IAuthorizationHandler, CustomRequireClaimHandler>();
+            services.AddScoped<IAuthorizationHandler, CookieJarAuthorizationHandler>();
             services.AddScoped<IAuthorizationHandler, CustomRequireClaimHandler>();
 
             services.AddControllers(config =>

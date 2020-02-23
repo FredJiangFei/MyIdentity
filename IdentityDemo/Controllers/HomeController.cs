@@ -1,7 +1,6 @@
-﻿using IdentityDemo.Data;
+﻿using IdentityDemo.CustomPolicyProvider;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -53,6 +52,7 @@ namespace IdentityDemo.Controllers
                 new Claim(ClaimTypes.Name, "Fred"),
                 new Claim(ClaimTypes.Email, "fred@123.com"),
                 new Claim(ClaimTypes.DateOfBirth, "17/2/2019"),
+                new Claim(DynamicPolicies.SecurityLevel, "7"),
                 new Claim(ClaimTypes.Role, "Admin")
             };
             var ci = new ClaimsIdentity(claims, "My Claim");
@@ -70,10 +70,25 @@ namespace IdentityDemo.Controllers
 
             if (authResult.Succeeded)
             {
-                return View("Index");
+                return Ok("Index");
             }
 
-            return View("Error");
+            return Ok("Error");
         }
+
+        [Route("/levelfive")]
+        [SecurityLevel(5)]
+        public IActionResult SecretLevel()
+        {
+            return Ok("Secret 5");
+        }
+
+        [Route("/levelten")]
+        [SecurityLevel(10)]
+        public IActionResult SecretHigherLevel()
+        {
+            return Ok("Secret 10");
+        }
+
     }
 }
